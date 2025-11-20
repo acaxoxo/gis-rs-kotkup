@@ -464,26 +464,6 @@ POST https://api.openrouteservice.org/v2/directions/driving-car/geojson
 
 ---
 
-## Screenshot
-
-### Tampilan Utama
-![Main View](docs/screenshot-main.png)
-*Peta interaktif dengan marker rumah dan rumah sakit*
-
-### Hasil Rute
-![Route Result](docs/screenshot-route.png)
-*Visualisasi rute tercepat dengan info detail*
-
-### Matriks Floyd-Warshall
-![Matrix View](docs/screenshot-matrix.png)
-*Matriks hasil optimasi dengan color coding*
-
-### Tabel All-Pairs
-![All Pairs Table](docs/screenshot-table.png)
-*Tabel lengkap semua jalur terpendek*
-
----
-
 ## Pengembangan
 
 ### Data Lokasi
