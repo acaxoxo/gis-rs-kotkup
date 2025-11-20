@@ -338,7 +338,7 @@ Lokasi 0 → Lokasi 5: 8.5 km (jalur langsung)
 **Setelah Floyd-Warshall:**
 ```
 Lokasi 0 → Lokasi 6 → Lokasi 5: 7.8 km
-Penghematan: 0.7 km ✅
+Penghematan: 0.7 km 
 ```
 
 Algoritma menemukan bahwa melewati Lokasi 6 sebagai perantara lebih efisien.
