@@ -657,7 +657,7 @@ SOFTWARE.
 
 Jika ada pertanyaan atau masalah:
 
-- **Email**: [email-anda@example.com]
+- **Email**: [asmaraninada16@gmail.com]
 - **GitHub Issues**: [Link ke repository issues]
 - **Documentation**: Lihat file ini dan `SCRIPT_PRESENTASI.md`
 
