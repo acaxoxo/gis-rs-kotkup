@@ -19,7 +19,6 @@ Aplikasi web GIS untuk optimasi rute menuju rumah sakit rujukan di Kota Kupang m
 - [Cara Menggunakan](#cara-menggunakan)
 - [Algoritma Floyd-Warshall](#algoritma-floyd-warshall)
 - [API Documentation](#api-documentation)
-- [Screenshot](#screenshot)
 - [Pengembangan](#pengembangan)
 - [Troubleshooting](#troubleshooting)
 - [Kontributor](#kontributor)
