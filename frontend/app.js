@@ -137,7 +137,7 @@ function hitungRuteTercepat() {
     try {
         const fromSelect = document.getElementById("fromLocation");
         const targetSelect = document.getElementById("targetRS");
-        
+
         const from = parseInt(fromSelect.value);
         const target = parseInt(targetSelect.value);
 
@@ -314,7 +314,7 @@ function showMatrixModal() {
 
     const modal = document.getElementById("matrixModal");
     modal.classList.remove("hidden");
-    
+
     // Default: show distance matrix
     renderMatrix("distance");
 }
@@ -327,7 +327,7 @@ function showAllPairsModal() {
 
     const modal = document.getElementById("allPairsModal");
     modal.classList.remove("hidden");
-    
+
     // Default: show distance table
     renderAllPairsTable("distance");
 }
@@ -338,16 +338,16 @@ function renderMatrix(type) {
     const originalMatrix = type === "distance" ? originalDistanceMatrix : originalDurationMatrix;
     const unit = type === "distance" ? "km" : "min";
     const divisor = type === "distance" ? 1000 : 60;
-    
+
     let html = '<div class="matrix-wrapper"><h4>Matriks Hasil Floyd-Warshall</h4>';
     html += '<table class="matrix-table"><thead><tr><th>Dari \\ Ke</th>';
-    
+
     // Header columns
     allLocations.forEach(loc => {
         html += `<th title="${loc.name}">${loc.id}</th>`;
     });
     html += '</tr></thead><tbody>';
-    
+
     // Rows
     allLocations.forEach((fromLoc, i) => {
         html += `<tr><th title="${fromLoc.name}">${fromLoc.id}</th>`;
@@ -356,7 +356,7 @@ function renderMatrix(type) {
             const originalValue = originalMatrix[i][j];
             const isChanged = result.changes[i][j];
             const displayValue = value === Infinity ? '∞' : (value / divisor).toFixed(2);
-            
+
             let cellClass = '';
             if (i === j) {
                 cellClass = 'diagonal';
@@ -365,27 +365,27 @@ function renderMatrix(type) {
             } else if (value < Infinity) {
                 cellClass = 'direct';
             }
-            
+
             let title = `${fromLoc.name} → ${toLoc.name}: ${displayValue} ${unit}`;
             if (isChanged) {
                 const origDisplay = (originalValue / divisor).toFixed(2);
                 title += `\nAsli: ${origDisplay} ${unit}\nDioptimalkan via jalur tidak langsung`;
             }
-            
+
             html += `<td class="${cellClass}" title="${title}">${displayValue}</td>`;
         });
         html += '</tr>';
     });
-    
+
     html += '</tbody></table></div>';
-    
+
     // Location legend
     html += '<div class="location-legend"><h4>Keterangan Lokasi:</h4>';
     allLocations.forEach(loc => {
         html += `<div><strong>${loc.id}:</strong> ${loc.name}</div>`;
     });
     html += '</div>';
-    
+
     container.innerHTML = html;
 }
 
@@ -394,12 +394,12 @@ function renderAllPairsTable(type) {
     const result = floydWarshallResult[type];
     const unit = type === "distance" ? "km" : "menit";
     const divisor = type === "distance" ? 1000 : 60;
-    
+
     let html = '<table class="all-pairs-table">';
     html += '<thead><tr>';
     html += '<th>Dari</th><th>Ke</th><th>Jarak/Waktu</th><th>Jalur</th><th>Tipe</th>';
     html += '</tr></thead><tbody>';
-    
+
     // Generate all pairs
     allLocations.forEach((fromLoc, i) => {
         allLocations.forEach((toLoc, j) => {
@@ -412,12 +412,12 @@ function renderAllPairsTable(type) {
                         const loc = allLocations.find(l => l.id === id);
                         return `${loc.name} (${id})`;
                     }).join(' → ');
-                    
+
                     const isChanged = result.changes[i][j];
-                    const routeType = isChanged ? 
-                        '<span class="badge indirect-badge">Tidak Langsung</span>' : 
+                    const routeType = isChanged ?
+                        '<span class="badge indirect-badge">Tidak Langsung</span>' :
                         '<span class="badge direct-badge">Langsung</span>';
-                    
+
                     html += `<tr>`;
                     html += `<td>${fromLoc.name}</td>`;
                     html += `<td>${toLoc.name}</td>`;
@@ -429,7 +429,7 @@ function renderAllPairsTable(type) {
             }
         });
     });
-    
+
     html += '</tbody></table>';
     container.innerHTML = html;
 }
@@ -472,7 +472,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Close modal when clicking outside
-    window.onclick = function(event) {
+    window.onclick = function (event) {
         const matrixModal = document.getElementById("matrixModal");
         const allPairsModal = document.getElementById("allPairsModal");
         if (event.target === matrixModal) {

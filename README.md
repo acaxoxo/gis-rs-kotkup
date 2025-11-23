@@ -21,8 +21,6 @@ Aplikasi web GIS untuk optimasi rute menuju rumah sakit rujukan di Kota Kupang m
 - [API Documentation](#api-documentation)
 - [Pengembangan](#pengembangan)
 - [Troubleshooting](#troubleshooting)
-- [Kontributor](#kontributor)
-- [Lisensi](#lisensi)
 
 ---
 
@@ -94,23 +92,27 @@ Dalam situasi darurat medis, **waktu adalah hal yang sangat krusial**. Aplikasi 
 ## Teknologi
 
 ### Backend
+
 - **Flask 2.0+** - Web framework Python
 - **Flask-CORS** - Cross-Origin Resource Sharing
 - **Requests** - HTTP library untuk API calls
 - **Pandas** - Data manipulation (optional)
 
 ### Frontend
+
 - **HTML5** - Markup
 - **CSS3** - Styling dengan flexbox
 - **Vanilla JavaScript** - Logic tanpa framework
 - **Leaflet.js 1.9.4** - Interactive maps
 
 ### External API
+
 - **OpenRouteService (ORS)** - Distance matrix & routing API
   - Matrix API: Generate distance/duration matrix
   - Directions API: Get route geometry
 
 ### Algorithm
+
 - **Floyd-Warshall** - All-Pairs Shortest Path
   - Kompleksitas: O(n³)
   - Dynamic Programming approach
@@ -157,12 +159,14 @@ gis-rs-kupang/
 ### Langkah Instalasi
 
 #### 1. Clone Repository
+
 ```bash
 git clone <repository-url>
 cd gis-rs-kupang
 ```
 
 #### 2. Setup Virtual Environment (Recommended)
+
 ```bash
 # Windows
 python -m venv venv
@@ -174,28 +178,34 @@ source venv/bin/activate
 ```
 
 #### 3. Install Dependencies
+
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
 #### 4. (Optional) Generate Matrix Baru
+
 Jika ingin regenerate matriks dengan data terbaru:
+
 ```bash
 cd backend/scripts
 python generate_matriks_ors.py
 ```
+
 **Note:** Butuh ORS API key yang valid (sudah tersedia di script)
 
 #### 5. Run Server
+
 ```bash
 cd backend
 python app.py
 ```
 
-Server akan berjalan di: **http://127.0.0.1:5000**
+Server akan berjalan di: **<http://127.0.0.1:5000>**
 
 #### 6. Buka di Browser
+
 ```
 http://127.0.0.1:5000
 ```
@@ -205,6 +215,7 @@ http://127.0.0.1:5000
 ## Cara Menggunakan
 
 ### 1. Memilih Lokasi
+
 - **Dari Lokasi**: Pilih titik awal (default: Rumah - Jalan Srikandi No.10)
 - **Ke Lokasi**: Pilih rumah sakit tujuan dari dropdown
 
@@ -235,6 +246,7 @@ http://127.0.0.1:5000
 - Lihat path reconstruction untuk setiap pasangan
 
 ### 6. Reset
+
 - Klik **"Reset Rute"** untuk menghapus rute dan mulai lagi
 
 ---
@@ -329,11 +341,13 @@ function reconstructPath(next, i, j) {
 ### Contoh Optimasi
 
 **Sebelum Floyd-Warshall:**
+
 ```
 Lokasi 0 → Lokasi 5: 8.5 km (jalur langsung)
 ```
 
 **Setelah Floyd-Warshall:**
+
 ```
 Lokasi 0 → Lokasi 6 → Lokasi 5: 7.8 km
 Penghematan: 0.7 km 
@@ -352,6 +366,7 @@ Algoritma menemukan bahwa melewati Lokasi 6 sebagai perantara lebih efisien.
 Mendapatkan data lokasi dan matriks jarak/waktu.
 
 **Response:**
+
 ```json
 {
   "meta": {
@@ -390,6 +405,7 @@ Mendapatkan data lokasi dan matriks jarak/waktu.
 Mendapatkan geometri rute dari OpenRouteService.
 
 **Request Body:**
+
 ```json
 {
   "coordinates": [
@@ -400,6 +416,7 @@ Mendapatkan geometri rute dari OpenRouteService.
 ```
 
 **Response:**
+
 ```json
 {
   "type": "success",
@@ -415,6 +432,7 @@ Mendapatkan geometri rute dari OpenRouteService.
 ```
 
 **Error Response:**
+
 ```json
 {
   "error": "Error message",
@@ -427,17 +445,20 @@ Mendapatkan geometri rute dari OpenRouteService.
 ### External API (OpenRouteService)
 
 #### Matrix API
+
 ```
 POST https://api.openrouteservice.org/v2/matrix/driving-car
 ```
 
 **Headers:**
+
 ```
 Authorization: <API_KEY>
 Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "locations": [[lng1, lat1], [lng2, lat2], ...],
@@ -447,11 +468,13 @@ Content-Type: application/json
 ```
 
 #### Directions API
+
 ```
 POST https://api.openrouteservice.org/v2/directions/driving-car/geojson
 ```
 
 **Body:**
+
 ```json
 {
   "coordinates": [[lng1, lat1], [lng2, lat2]],
@@ -488,19 +511,25 @@ Dataset mencakup **13 lokasi** di Kota Kupang:
 
 1. Edit `backend/scripts/generate_matriks_ors.py`
 2. Tambahkan koordinat ke array `hospitals`:
+
 ```python
 {"id": 13, "name": "Nama RS Baru", "lat": -10.xxx, "lng": 123.xxx}
 ```
+
 3. Jalankan ulang script:
+
 ```bash
 python generate_matriks_ors.py
 ```
+
 4. Restart server Flask
 
 ### Kustomisasi
 
 #### Ganti Warna Rute
+
 Edit `frontend/app.js`:
+
 ```javascript
 polylineLayer = L.polyline(coords, {
     color: "#4caf50",  // Ganti warna (default: #f44336)
@@ -510,7 +539,9 @@ polylineLayer = L.polyline(coords, {
 ```
 
 #### Ganti Icon Marker
+
 Edit `frontend/app.js` pada bagian `homeIcon` atau `hospitalIcon`:
+
 ```javascript
 const customIcon = L.icon({
     iconUrl: 'path/to/icon.png',
@@ -520,7 +551,9 @@ const customIcon = L.icon({
 ```
 
 #### Ganti Basemap
+
 Edit `frontend/app.js`:
+
 ```javascript
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19
@@ -536,39 +569,51 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 ## Troubleshooting
 
 ### Error: `ModuleNotFoundError: No module named 'flask'`
+
 **Solusi:**
+
 ```bash
 pip install -r backend/requirements.txt
 ```
 
 ### Error: `dataset JSON not found`
+
 **Solusi:**
+
 ```bash
 cd backend/scripts
 python generate_matriks_ors.py
 ```
 
 ### Error: `ORS API error 403`
+
 **Penyebab:** API key invalid atau quota habis
 
 **Solusi:**
+
 1. Daftar API key baru di [openrouteservice.org](https://openrouteservice.org/)
 2. Update di `backend/app.py` dan `backend/scripts/generate_matriks_ors.py`
 
 ### Error: `CORS policy`
+
 **Solusi:** Pastikan Flask-CORS terinstall
+
 ```bash
 pip install flask-cors
 ```
 
 ### Peta tidak muncul
+
 **Solusi:**
+
 1. Cek koneksi internet (Leaflet tiles butuh internet)
 2. Buka console browser (F12) untuk lihat error
 3. Pastikan file `frontend/app.js` di-load dengan benar
 
 ### Rute tidak muncul setelah klik "Hitung Rute"
+
 **Solusi:**
+
 1. Cek console browser untuk error
 2. Pastikan backend server running
 3. Test endpoint `/api/dataset` di browser
@@ -579,6 +624,7 @@ pip install flask-cors
 ## Deployment
 
 ### Heroku
+
 ```bash
 # Install Heroku CLI
 heroku login
@@ -594,6 +640,7 @@ git push heroku main
 ```
 
 ### Docker
+
 ```dockerfile
 FROM python:3.9-slim
 
@@ -614,52 +661,6 @@ docker run -p 5000:5000 gis-rs-kupang
 
 ---
 
-## Kontributor
-
-- **Cantika** - Developer & Researcher
-- **Dosen Pembimbing** - Guidance & Review
-
----
-
-## Lisensi
-
-Proyek ini menggunakan lisensi **MIT License**.
-
-```
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-## Kontak & Dukungan
-
-Jika ada pertanyaan atau masalah:
-
-- **Email**: [asmaraninada16@gmail.com]
-- **GitHub Issues**: [Link ke repository issues]
-
----
-
 ## Acknowledgments
 
 - **OpenRouteService** - Untuk API routing dan matrix yang powerful
@@ -674,8 +675,8 @@ Jika ada pertanyaan atau masalah:
 1. Floyd, R. W. (1962). "Algorithm 97: Shortest Path". Communications of the ACM.
 2. Warshall, S. (1962). "A Theorem on Boolean Matrices". Journal of the ACM.
 3. Cormen, T. H., et al. (2009). "Introduction to Algorithms" (3rd ed.). MIT Press.
-4. OpenRouteService Documentation: https://openrouteservice.org/dev/
-5. Leaflet Documentation: https://leafletjs.com/reference.html
+4. OpenRouteService Documentation: <https://openrouteservice.org/dev/>
+5. Leaflet Documentation: <https://leafletjs.com/reference.html>
 
 ---
 
