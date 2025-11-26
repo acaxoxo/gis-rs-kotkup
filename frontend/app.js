@@ -8,6 +8,12 @@ let floydWarshallResult = null;
 let allLocations = [];
 let polylineLayer = null;
 let hospitalMarkers = [];
+let customLocationMarker = null;
+let customLocation = null;
+let isRouteCalculated = false; // Flag untuk tracking apakah rute sudah dihitung
+
+// Preset lokasi umum di Kupang - DEPRECATED (diganti dengan geocoding)
+// Kept for backward compatibility with map click feature
 
 const hospitalIcon = L.icon({
     iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDMwIDQwIj48cGF0aCBmaWxsPSIjMjE5NmYzIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIgZD0iTTE1IDAgQyA4IDAgMyA1IDMgMTIgQyAzIDE4IDguNSAyNSAxNSA0MCBDIDIxLjUgMjUgMjcgMTggMjcgMTIgQyAyNyA1IDIyIDAgMTUgMCBaIE0gMTUgMTcgQyAxMiAxNyAxMCAxNSAxMCAxMiBDIDEwIDkgMTIgNyAxNSA3IEMgMTggNyAyMCA5IDIwIDEyIEMgMjAgMTUgMTggMTcgMTUgMTcgWiIvPjwvc3ZnPg==',
@@ -61,6 +67,14 @@ function initMap() {
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19
     }).addTo(map);
+    
+    // Event listener untuk klik peta (set custom location)
+    map.on('click', function(e) {
+        const mode = document.getElementById('locationMode').value;
+        if (mode === 'custom') {
+            setCustomLocationFromClick(e.latlng.lat, e.latlng.lng);
+        }
+    });
 }
 
 async function loadDataset() {
@@ -134,19 +148,37 @@ async function loadDataset() {
 
 function hitungRuteTercepat() {
     try {
-        const fromSelect = document.getElementById("fromLocation");
+        const mode = document.getElementById("locationMode").value;
         const targetSelect = document.getElementById("targetRS");
-
-        const from = parseInt(fromSelect.value);
         const target = parseInt(targetSelect.value);
 
-        if (isNaN(from) || !target || isNaN(target)) {
-            showNotification("Silakan pilih lokasi awal dan tujuan!", "error");
+        if (isNaN(target) || target < 0) {
+            showNotification("Silakan pilih RS tujuan!", "error");
+            return;
+        }
+
+        // Mode lokasi custom
+        if (mode === 'custom') {
+            if (!customLocation) {
+                showNotification("Silakan pilih lokasi awal terlebih dahulu (klik peta atau pilih preset)!", "error");
+                return;
+            }
+            
+            calculateRouteFromCustom(target);
+            return;
+        }
+
+        // Mode antar RS (original logic)
+        const fromSelect = document.getElementById("fromLocation");
+        const from = parseInt(fromSelect.value);
+
+        if (isNaN(from)) {
+            showNotification("Silakan pilih RS asal!", "error");
             return;
         }
 
         if (from === target) {
-            showNotification("Lokasi awal dan tujuan tidak boleh sama!", "error");
+            showNotification("RS asal dan tujuan tidak boleh sama!", "error");
             return;
         }
 
@@ -215,7 +247,7 @@ async function fetchRealRoute(path, distMatrix, durMatrix) {
             if (polylineLayer) polylineLayer.remove();
 
             polylineLayer = L.polyline(coords, {
-                color: "#f44336",
+                color: "#2196f3",
                 weight: 5,
                 opacity: 0.7
             }).addTo(map);
@@ -223,6 +255,9 @@ async function fetchRealRoute(path, distMatrix, durMatrix) {
             map.fitBounds(polylineLayer.getBounds());
 
             displayRouteInfo(path, distMatrix, durMatrix);
+            
+            // Set flag bahwa rute sudah dihitung
+            isRouteCalculated = true;
             
             // Highlight path in graph visualization
             if (window.graphVisualizer) {
@@ -291,10 +326,24 @@ function resetRoute() {
         polylineLayer.remove();
         polylineLayer = null;
     }
+    
+    if (customLocationMarker) {
+        customLocationMarker.remove();
+        customLocationMarker = null;
+    }
+    
+    customLocation = null;
+    isRouteCalculated = false; // Reset flag
 
     document.getElementById("routeInfo").classList.add("hidden");
+    document.getElementById("locationMode").value = "hospital";
     document.getElementById("fromLocation").value = "0";
     document.getElementById("targetRS").value = "";
+    document.getElementById("customAddress").value = "";
+    document.getElementById("customLocationInfo").classList.add("hidden");
+    document.getElementById("addressHelpText").classList.add("hidden");
+    document.getElementById("hospitalModeControls").classList.remove("hidden");
+    document.getElementById("customModeControls").classList.add("hidden");
     
     // Clear graph highlight
     if (window.graphVisualizer) {
@@ -305,6 +354,8 @@ function resetRoute() {
         const group = L.featureGroup(hospitalMarkers);
         map.fitBounds(group.getBounds(), { padding: [50, 50] });
     }
+    
+    showNotification("Rute telah direset.", "info");
 
     showNotification("Rute telah direset", "info");
 }
@@ -315,7 +366,7 @@ function getLocationName(id) {
 }
 
 function showMatrixModal() {
-    if (!floydWarshallResult) {
+    if (!floydWarshallResult && !isRouteCalculated) {
         showNotification("Hitung rute terlebih dahulu untuk melihat matriks!", "error");
         return;
     }
@@ -328,7 +379,7 @@ function showMatrixModal() {
 }
 
 function showAllPairsModal() {
-    if (!floydWarshallResult) {
+    if (!floydWarshallResult && !isRouteCalculated) {
         showNotification("Hitung rute terlebih dahulu untuk melihat semua jalur!", "error");
         return;
     }
@@ -451,12 +502,223 @@ function closeAllPairsModal() {
 }
 
 function showGraphModal() {
-    if (!floydWarshallResult) {
+    if (!floydWarshallResult && !isRouteCalculated) {
         showNotification("Hitung rute terlebih dahulu untuk melihat graf!", "error");
         return;
     }
     
     showGraphVisualization(hospitals, floydWarshallResult.distance.dist, 'weighted');
+}
+
+// Geocoding function menggunakan Nominatim (OpenStreetMap)
+async function geocodeAddress(address) {
+    try {
+        showLoading(true);
+        
+        // Tambahkan "Kota Kupang, NTT, Indonesia" jika belum ada
+        let fullAddress = address;
+        if (!address.toLowerCase().includes('kupang')) {
+            fullAddress = `${address}, Kota Kupang, NTT, Indonesia`;
+        }
+        
+        console.log("Mencari alamat:", fullAddress);
+        
+        // Nominatim Geocoding API (OpenStreetMap)
+        // Bounded search untuk area Kupang: lat -10.0 to -10.3, lon 123.5 to 123.7
+        const url = `https://nominatim.openstreetmap.org/search?` +
+                    `q=${encodeURIComponent(fullAddress)}` +
+                    `&format=json` +
+                    `&limit=5` +
+                    `&addressdetails=1` +
+                    `&countrycodes=id`;
+        
+        console.log("URL Geocoding:", url);
+        
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'GIS-RS-Kupang-Routing-App/1.0 (Educational Project)'
+            }
+        });
+        
+        console.log("Response status:", response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error response:", errorText);
+            throw new Error(`Geocoding gagal (${response.status}). Silakan coba lagi.`);
+        }
+        
+        const data = await response.json();
+        console.log("Data geocoding:", data);
+        
+        if (!data || data.length === 0) {
+            throw new Error('Alamat tidak ditemukan. Coba gunakan nama landmark (contoh: "Flobamora Mall") atau nama jalan utama.');
+        }
+        
+        // Ambil hasil pertama
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        const foundName = result.display_name || address;
+        
+        console.log("Koordinat ditemukan:", lat, lng);
+        
+        // Validasi koordinat dalam area Kupang (lebih fleksibel)
+        if (lat < -10.5 || lat > -9.8 || lng < 123.3 || lng > 124.0) {
+            console.warn("Koordinat di luar area Kupang:", lat, lng);
+            throw new Error('Lokasi ditemukan di luar area Kota Kupang. Pastikan alamat benar.');
+        }
+        
+        showLoading(false);
+        return { lat, lng, name: foundName, originalAddress: address };
+        
+    } catch (error) {
+        showLoading(false);
+        console.error("Geocoding error:", error);
+        throw error;
+    }
+}
+
+function setCustomLocationFromClick(lat, lng) {
+    customLocation = { lat, lng, name: `Lokasi Custom (${lat.toFixed(5)}, ${lng.toFixed(5)})` };
+    
+    // Hapus marker lama jika ada
+    if (customLocationMarker) {
+        customLocationMarker.remove();
+    }
+    
+    // Tambah marker baru
+    const customIcon = L.icon({
+        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDMwIDQwIj48cGF0aCBmaWxsPSIjZmY1NzIyIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIgZD0iTTE1IDAgQyA4IDAgMyA1IDMgMTIgQyAzIDE4IDguNSAyNSAxNSA0MCBDIDIxLjUgMjUgMjcgMTggMjcgMTIgQyAyNyA1IDIyIDAgMTUgMCBaIE0gMTUgMTcgQyAxMiAxNyAxMCAxNSAxMCAxMiBDIDEwIDkgMTIgNyAxNSA3IEMgMTggNyAyMCA5IDIwIDEyIEMgMjAgMTUgMTggMTcgMTUgMTcgWiIvPjwvc3ZnPg==',
+        iconSize: [30, 40],
+        iconAnchor: [15, 40],
+        popupAnchor: [0, -40]
+    });
+    
+    customLocationMarker = L.marker([lat, lng], { icon: customIcon })
+        .addTo(map)
+        .bindPopup(`<b>Lokasi Awal Anda</b><br>${customLocation.name}`)
+        .openPopup();
+    
+    // Update info
+    document.getElementById('customLocationInfo').classList.remove('hidden');
+    document.getElementById('customLocationName').textContent = customLocation.name;
+    
+    showNotification("Lokasi custom berhasil ditandai! Pilih RS tujuan dan klik Hitung Rute.", "success");
+}
+
+function setPresetLocation(presetKey) {
+    const preset = presetLocations[presetKey];
+    if (preset) {
+        setCustomLocationFromClick(preset.lat, preset.lng);
+        customLocation.name = preset.name;
+        document.getElementById('customLocationName').textContent = preset.name;
+    }
+}
+
+async function calculateRouteFromCustom(targetRSId) {
+    try {
+        showLoading(true);
+        
+        // Ambil koordinat target RS
+        const targetRS = hospitals.find(h => h.id === targetRSId);
+        if (!targetRS) {
+            throw new Error("RS tujuan tidak ditemukan");
+        }
+        
+        // Request ke ORS untuk rute langsung dari custom location ke target RS
+        const coordinates = [
+            [customLocation.lng, customLocation.lat],
+            [targetRS.lng, targetRS.lat]
+        ];
+        
+        const response = await fetch("/api/route", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ coordinates })
+        });
+        
+        if (!response.ok) {
+            throw new Error("Gagal mendapatkan rute dari server");
+        }
+        
+        const data = await response.json();
+        
+        if (data.type === "success" && data.geometry) {
+            const coords = data.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            
+            if (polylineLayer) polylineLayer.remove();
+            
+            polylineLayer = L.polyline(coords, {
+                color: "#2196f3",
+                weight: 5,
+                opacity: 0.7
+            }).addTo(map);
+            
+            map.fitBounds(polylineLayer.getBounds());
+            
+            // Hitung jarak dan waktu dari geometry
+            let totalDistance = 0;
+            for (let i = 0; i < data.geometry.coordinates.length - 1; i++) {
+                const [lng1, lat1] = data.geometry.coordinates[i];
+                const [lng2, lat2] = data.geometry.coordinates[i + 1];
+                totalDistance += getDistanceFromLatLng(lat1, lng1, lat2, lng2);
+            }
+            
+            // Estimasi waktu (asumsi 40 km/jam)
+            const estimatedTime = (totalDistance / 1000) / 40 * 60; // menit
+            
+            displayCustomRouteInfo(customLocation, targetRS, totalDistance, estimatedTime);
+            
+            // Set flag bahwa rute sudah dihitung
+            isRouteCalculated = true;
+            
+            showLoading(false);
+            showNotification("Rute dari lokasi Anda berhasil dihitung!", "success");
+        } else {
+            throw new Error("Format rute tidak valid");
+        }
+        
+    } catch (error) {
+        showLoading(false);
+        showNotification(`Error: ${error.message}`, "error");
+        console.error("Error calculating custom route:", error);
+    }
+}
+
+function getDistanceFromLatLng(lat1, lng1, lat2, lng2) {
+    const R = 6371000; // Radius bumi dalam meter
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function displayCustomRouteInfo(from, to, distance, duration) {
+    const routeInfoEl = document.getElementById("routeInfo");
+    const routeDetailsEl = document.getElementById("routeDetails");
+    
+    let html = `
+        <div class="route-step">
+            <strong>Rute Langsung</strong><br>
+            Dari: <b>${from.name}</b><br>
+            Ke: <b>${to.name}</b><br>
+            Jarak: ${(distance / 1000).toFixed(2)} km<br>
+            Estimasi Waktu: ${Math.round(duration)} menit
+        </div>
+        <div class="route-total">
+            <div>📍 Total Jarak: <span style="color: #1976d2">${(distance / 1000).toFixed(2)} km</span></div>
+            <div>⏱️ Estimasi Waktu: <span style="color: #1976d2">${Math.round(duration)} menit</span></div>
+            <div>🏥 RS Tujuan: <span style="color: #1976d2">${to.name}</span></div>
+        </div>
+    `;
+    
+    routeDetailsEl.innerHTML = html;
+    routeInfoEl.classList.remove("hidden");
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -471,6 +733,60 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("closeMatrix").onclick = closeMatrixModal;
     document.getElementById("closeAllPairs").onclick = closeAllPairsModal;
     document.getElementById("closeGraph").onclick = closeGraphModal;
+    
+    // Location mode switching
+    document.getElementById("locationMode").addEventListener("change", function(e) {
+        const mode = e.target.value;
+        const hospitalControls = document.getElementById("hospitalModeControls");
+        const customControls = document.getElementById("customModeControls");
+        const helpText = document.getElementById("addressHelpText");
+        
+        if (mode === 'hospital') {
+            hospitalControls.classList.remove("hidden");
+            customControls.classList.add("hidden");
+            helpText.classList.add("hidden");
+            if (customLocationMarker) {
+                customLocationMarker.remove();
+                customLocationMarker = null;
+            }
+            customLocation = null;
+            document.getElementById('customLocationInfo').classList.add('hidden');
+        } else {
+            hospitalControls.classList.add("hidden");
+            customControls.classList.remove("hidden");
+            helpText.classList.remove("hidden");
+        }
+    });
+    
+    // Geocode address button
+    document.getElementById("btnGeocodeAddress").addEventListener("click", async function() {
+        const addressInput = document.getElementById("customAddress");
+        const address = addressInput.value.trim();
+        
+        if (!address) {
+            showNotification("Silakan masukkan alamat terlebih dahulu!", "error");
+            return;
+        }
+        
+        try {
+            const location = await geocodeAddress(address);
+            setCustomLocationFromClick(location.lat, location.lng);
+            customLocation.name = location.name;
+            customLocation.originalAddress = location.originalAddress;
+            document.getElementById('customLocationName').textContent = location.name;
+            
+            showNotification("Alamat ditemukan! Pilih RS tujuan dan klik Hitung Rute.", "success");
+        } catch (error) {
+            showNotification(error.message, "error");
+        }
+    });
+    
+    // Enter key pada address input
+    document.getElementById("customAddress").addEventListener("keypress", function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById("btnGeocodeAddress").click();
+        }
+    });
 
     // Tab switching for matrix modal
     document.querySelectorAll("#matrixModal .tab-btn").forEach(btn => {
